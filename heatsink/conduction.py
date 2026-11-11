@@ -12,9 +12,8 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import spsolve
 
 
-def base_plate_resistance(W: float, L: float, tb: float, k: float, a: float, b: float,
-                          h_eff: float, n_xy: int = 60, n_z: int = 12) -> float:
-    """Total resistance [K/W] from the mean source temperature to the ambient."""
+def _solve_quarter(W, L, tb, k, a, b, h_eff, n_xy, n_z):
+    """Temperature rise per watt in a quarter of the plate; returns the field and helpers."""
     nx, ny, nz = n_xy, n_xy, n_z
     dx, dy, dz = W / 2 / nx, L / 2 / ny, tb / nz
     xc = (np.arange(nx) + 0.5) * dx            # cell centres from the plate centre
@@ -52,7 +51,27 @@ def base_plate_resistance(W: float, L: float, tb: float, k: float, a: float, b: 
     M = coo_matrix((vals + list(diag), (rows + list(range(n)), cols + list(range(n)))), shape=(n, n)).tocsr()
     T = spsolve(M, rhs).reshape(nx, ny, nz)
 
-    # surface temperature of the heated face (extrapolated half cell) weighted by the source
-    T_top = T[:, :, -1] + q_flux * frac * dz / 2 / k
-    T_mean_source = (T_top * frac).sum() / frac.sum()
-    return T_mean_source / (4 * Q_quarter)
+    return T / (4 * Q_quarter), xc, yc, dz, frac, q_flux / (4 * Q_quarter)
+
+
+def base_plate_resistance(W: float, L: float, tb: float, k: float, a: float, b: float,
+                          h_eff: float, n_xy: int = 60, n_z: int = 12) -> float:
+    """Total resistance [K/W] from the mean source temperature to the ambient."""
+    T, _, _, dz, frac, q = _solve_quarter(W, L, tb, k, a, b, h_eff, n_xy, n_z)
+    T_top = T[:, :, -1] + q * frac * dz / 2 / k        # heated face (extrapolated half cell)
+    return float((T_top * frac).sum() / frac.sum())
+
+
+def base_temperature_field(W: float, L: float, tb: float, k: float, a: float, b: float,
+                           h_eff: float, n_xy: int = 40, n_z: int = 8):
+    """Temperature rise per watt [K/W] in the whole plate, as (x, y, z, T[x, y, z]).
+
+    x across W and y along L are measured from the plate centre; z from the cooled face (z = 0)
+    to the heated face (z = tb)."""
+    Tq, xc, yc, dz, _, _ = _solve_quarter(W, L, tb, k, a, b, h_eff, n_xy, n_z)
+    T = np.concatenate([Tq[::-1], Tq], axis=0)
+    T = np.concatenate([T[:, ::-1], T], axis=1)
+    x = np.concatenate([-xc[::-1], xc])
+    y = np.concatenate([-yc[::-1], yc])
+    z = (np.arange(n_z) + 0.5) * dz
+    return x, y, z, T

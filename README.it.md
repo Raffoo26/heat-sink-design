@@ -1,4 +1,10 @@
-# Heat Sink Design
+![Heat Sink Design — dissipatori ad alette per l'elettronica, dalle equazioni al pezzo stampato](images/banner.png)
+
+[![tests](https://github.com/Raffoo26/heat-sink-design/actions/workflows/tests.yml/badge.svg)](https://github.com/Raffoo26/heat-sink-design/actions/workflows/tests.yml)
+![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
+![CoolProp](https://img.shields.io/badge/air%20properties-CoolProp-orange)
+![CFD](https://img.shields.io/badge/CFD-SimScale-0a7cff)
+![3D printable](https://img.shields.io/badge/3D-printable-2ea44f)
 
 🇬🇧 [English version](README.md)
 
@@ -76,6 +82,22 @@ Diffusore di calore da 37.5 mm, pasta termica (0.03 K/W), ventola intubata (mass
 - L'ottimo è piatto: tra 28 e 36 alette la resistenza resta entro il 4 % dal migliore, quindi la scelta finale può seguire il costo di produzione.
 - Il bilancio delle temperature mostra dove intervenire: 17 K nell'aria, 5.5 K di diffusione nella base (una base in rame o una camera di vapore li ridurrebbe), 3.8 K nella pasta termica.
 
+## Modelli stampabili in 3D
+
+Qualsiasi progetto può essere esportato come solido STL chiuso (`heatsink.export.write_stl`), pronto per il programma di stampa, un CAD o un generatore di mesh per la CFD. I due dissipatori ottimizzati sono in [`cad/`](cad) (in millimetri) e vengono stampati in plastica come modelli fisici dei risultati (foto in arrivo).
+
+![I due dissipatori ottimizzati](images/heatsinks_3d.png)
+
+Si stampano con la base sul piatto: le alette sono pareti verticali, quindi non servono supporti. Il dissipatore della CPU ha alette da 0.8 mm (due linee con un ugello da 0.4 mm): va stampato a grandezza reale o più grande, mai rimpicciolito. Le sorgenti di calore (`led_source.stl`, `cpu_source.stl`) si possono stampare in un altro colore e incollare sotto la base. Elenco dei pezzi, impostazioni di stampa e scheda per controllare le misure: [docs/3d_printing.md](docs/3d_printing.md) (in inglese).
+
+Un dissipatore stampato in plastica è un **modello, non un dissipatore funzionante**. Il modello termico mostra perché (caso del LED, stessa geometria, cambia solo il materiale):
+
+| Materiale | k [W/(m·K)] | Rendimento alette | Temperatura del LED con 40 W |
+|---|---|---|---|
+| Alluminio 6063 | 209 | 98 % | 75 °C |
+| Filamento caricato "termoconduttivo" (ipotesi) | 5 | 60 % | 284 °C |
+| PLA / PETG | 0.2 | 12 % | > 2000 °C (si scioglie molto prima) |
+
 ## Verifica CFD (in corso)
 
 I due progetti ottimizzati vengono simulati in [SimScale](https://www.simscale.com/) (scambio termico coniugato: conduzione nel solido + flusso d'aria, laminare). I risultati CFD (temperature di base e sorgente, perdita di carico, temperatura dell'aria in uscita) saranno confrontati qui con il modello. La configurazione è descritta in [docs/cfd_simscale.md](docs/cfd_simscale.md).
@@ -89,6 +111,7 @@ pip install -r requirements.txt
 python examples/led_natural_example.py
 python examples/cpu_fan_example.py
 python examples/validation_example.py
+python examples/export_stl.py
 pytest
 ```
 
@@ -118,10 +141,12 @@ Risultati: `R_heatsink` (base sotto la sorgente → ambiente, come nelle schede 
 
 ```text
 heatsink/          air.py (proprietà), geometry.py, correlations.py, model.py,
-                   conduction.py (verifica 3-D), optimize.py, plots.py
-examples/          i due casi studio e i grafici di validazione
+                   conduction.py (verifica 3-D), optimize.py, plots.py,
+                   export.py (STL), render.py e thermal_map.py (immagini 3-D)
+examples/          i due casi studio, i grafici di validazione e l'esportazione STL
+cad/               modelli STL dei dissipatori ottimizzati e delle sorgenti di calore
 tests/             validazione su dati pubblicati + test unitari
-docs/              configurazione della CFD
+docs/              configurazione della CFD e guida alla stampa 3D
 images/            figure di questo README
 ```
 
@@ -144,5 +169,6 @@ Regime stazionario; flusso laminare; alette a sezione costante su base piana; fl
 - [x] Modello analitico, convezione naturale e forzata, punto di lavoro della ventola
 - [x] Validazione su dati pubblicati e su una soluzione 3-D della conduzione
 - [x] Due casi studio ottimizzati
+- [x] Esportazione STL e modelli stampati in 3D
 - [ ] Verifica CFD di entrambi i progetti (SimScale)
 - [ ] Web app per progettare il proprio dissipatore

@@ -1,4 +1,10 @@
-# Heat Sink Design
+![Heat Sink Design — plate-fin heat sinks for electronics, from equations to a printed part](images/banner.png)
+
+[![tests](https://github.com/Raffoo26/heat-sink-design/actions/workflows/tests.yml/badge.svg)](https://github.com/Raffoo26/heat-sink-design/actions/workflows/tests.yml)
+![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
+![CoolProp](https://img.shields.io/badge/air%20properties-CoolProp-orange)
+![CFD](https://img.shields.io/badge/CFD-SimScale-0a7cff)
+![3D printable](https://img.shields.io/badge/3D-printable-2ea44f)
 
 🇮🇹 [Versione italiana](README.it.md)
 
@@ -76,6 +82,22 @@ Above about 8 m/s the channel Reynolds number exceeds 2300: the flow becomes tra
 - The optimum is flat: from 28 to 36 fins the resistance stays within 4 % of the best, so the final choice can follow manufacturing cost.
 - The temperature budget shows where to act next: 17 K in the air, 5.5 K spreading in the base (a copper base or a vapour chamber would cut it), 3.8 K in the thermal paste.
 
+## 3D-printable models
+
+Any design can be exported as a watertight STL solid (`heatsink.export.write_stl`), ready for a slicer, a CAD program or a CFD mesher. The two optimised heat sinks are in [`cad/`](cad) (millimetres) and are printed in plastic as physical models of the results (photos coming).
+
+![The two optimised heat sinks](images/heatsinks_3d.png)
+
+Print with the base on the bed: the fins are vertical walls, so no supports are needed. The CPU heat sink has 0.8 mm fins (two lines with a 0.4 mm nozzle): print it at full size or larger, never scaled down. The heat sources (`led_source.stl`, `cpu_source.stl`) can be printed in another colour and glued under the base. Parts list, slicer settings and a dimension check sheet: [docs/3d_printing.md](docs/3d_printing.md).
+
+A printed plastic heat sink is a **model, not a working heat sink**. The thermal model shows why (LED case, same geometry, only the material changes):
+
+| Material | k [W/(m·K)] | Fin efficiency | LED temperature at 40 W |
+|---|---|---|---|
+| Aluminium 6063 | 209 | 98 % | 75 °C |
+| Filled "thermally conductive" filament (assumed) | 5 | 60 % | 284 °C |
+| PLA / PETG | 0.2 | 12 % | > 2000 °C (it melts long before) |
+
 ## CFD verification (in progress)
 
 The two optimised designs are simulated in [SimScale](https://www.simscale.com/) (conjugate heat transfer: solid conduction + air flow, laminar). The CFD results (base and source temperatures, pressure drop, outlet air temperature) will be compared with the model here. The set-up is described in [docs/cfd_simscale.md](docs/cfd_simscale.md).
@@ -89,6 +111,7 @@ pip install -r requirements.txt
 python examples/led_natural_example.py
 python examples/cpu_fan_example.py
 python examples/validation_example.py
+python examples/export_stl.py
 pytest
 ```
 
@@ -118,10 +141,12 @@ Results: `R_heatsink` (base under the source → ambient, as in datasheets), `R_
 
 ```text
 heatsink/          air.py (properties), geometry.py, correlations.py, model.py,
-                   conduction.py (3-D check), optimize.py, plots.py
-examples/          the two case studies and the validation plots
+                   conduction.py (3-D check), optimize.py, plots.py,
+                   export.py (STL), render.py and thermal_map.py (3-D pictures)
+examples/          the two case studies, the validation plots and the STL export
+cad/               STL models of the optimised heat sinks and of the heat sources
 tests/             validation against published data + unit tests
-docs/              CFD set-up
+docs/              CFD set-up and 3D printing guide
 images/            figures in this README
 ```
 
@@ -144,5 +169,6 @@ Steady state; laminar flow; fins with uniform cross-section on a flat base; full
 - [x] Analytical model, natural and forced convection, fan operating point
 - [x] Validation against published data and a 3-D conduction solution
 - [x] Two optimised case studies
+- [x] STL export and 3D-printed models
 - [ ] CFD verification of both designs (SimScale)
 - [ ] Web app to design your own heat sink
